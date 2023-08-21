@@ -1,0 +1,51 @@
+trigger:
+- master
+
+pr:
+- '*'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Checkout
+  jobs:
+  - job: CheckoutJob
+    steps:
+    - checkout: self
+
+- stage: GradleClean
+  jobs:
+  - job: GradleCleanJob
+    steps:
+    - script: ./gradlew clean
+
+- stage: Build
+  jobs:
+  - job: BuildJob
+    steps:
+    - script: ./gradlew assembleRelease
+
+- stage: Archive
+  jobs:
+  - job: ArchiveJob
+    steps:
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifact: 'apk'
+
+- stage: ArtifactUpload
+  jobs:
+  - job: ArtifactUploadJob
+    steps:
+    - script: echo 'Hello'
+    - task: AppCenterDistribute@3
+      inputs:
+        serverEndpoint: 'yourAppCenterServiceConnection'
+        appSlug: 'shital/Android-Poc'
+        distributionGroups: 'android-apk-1'
+        releaseNotesOption: 'input'
+        releaseNotesInput: 'Your release notes here'
+        symbolsOption: 'noUpload'
+        apkFile: '**/*.apk'
